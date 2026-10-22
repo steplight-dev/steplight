@@ -5,7 +5,7 @@ import { redactText, sanitizeSnapshot } from "../redact.js";
 import { sanitizeStep } from "../sanitize.js";
 import { maxSeverity } from "../severity.js";
 import { decryptFile, encryptFile, isEncryptedText, resolveKey, writePrivate, type EncryptionOptions } from "./fileCrypto.js";
-import type { Run, RunSummary, Step } from "../types.js";
+import { FORMAT_VERSION, type Run, type RunSummary, type Step } from "../types.js";
 
 /** Default location of run output, relative to the working directory. */
 export const DEFAULT_RUNS_DIR = path.join(".steplight", "runs");
@@ -51,7 +51,7 @@ export class RunWriter {
   }
 
   private async writeMeta(): Promise<void> {
-    const meta = { ...this.run, steps: undefined, task: redactText(this.run.task) };
+    const meta = { formatVersion: FORMAT_VERSION, ...this.run, steps: undefined, task: redactText(this.run.task) };
     await writePrivate(path.join(this.dir, "run.json"), this.seal(JSON.stringify(meta, null, 2), "run.json"));
   }
 

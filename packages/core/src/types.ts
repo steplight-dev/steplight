@@ -125,18 +125,28 @@ export interface Step {
   tokens?: PageTokens;
 }
 
+/** Version of the run folder format (`formatVersion` in `run.json`); see `spec/run-format.schema.json`. */
+export const FORMAT_VERSION = 1;
+
 /** Final or current state of a run. */
 export type RunStatus = "running" | "success" | "failed";
 
 /** One agent task and all of its steps. */
 export interface Run {
+  /** Run folder format version. Absent in runs written before it existed. */
+  formatVersion?: number;
   id: string;
   task: string;
   startedAt: number;
   endedAt?: number;
   status: RunStatus;
   steps: Step[];
-  meta: Record<string, string>;
+  /**
+   * Free-form metadata. Written by the SDKs: `sdk`, `sdkVersion`, `captureLevel` and `analyzed`
+   * (false until `steplight analyze` has run the detectors; absent in runs recorded before it existed,
+   * which were analysed while recording).
+   */
+  meta: Record<string, string | boolean>;
 }
 
 /** Lightweight listing entry for a stored run. */

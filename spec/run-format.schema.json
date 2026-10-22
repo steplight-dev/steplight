@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/steplight-dev/steplight/spec/run-format.schema.json",
+  "title": "Steplight run folder, format version 1",
+  "description": "A run is a folder `<runs-dir>/<runId>/` holding `run.json` (one JSON object, the `runJson` definition), `steps.jsonl` (one `step` object per line), `snapshots/<stepId>.txt` (redacted page text, referenced by `step.snapshotRef`) and, only until `steplight analyze` has consumed it, `analysis-input.jsonl` (one `analysisInput` object per line). When encryption at rest is on, every file (and every line of the .jsonl files) is replaced by an `encryptedEnvelope`. Every SDK writes this format; every reader (CLI, viewer, diff, check, report, GitHub Action) reads it.",
+  "oneOf": [
+    { "$ref": "#/$defs/runJson" },
+    { "$ref": "#/$defs/step" },
+    { "$ref": "#/$defs/analysisInput" },
+    { "$ref": "#/$defs/encryptedEnvelope" }
+  ],
+  "$defs": {
+    "formatVersion": {
+      "description": "Version of this format. Bumped on any change a reader of the previous version could not handle.",
+      "const": 1
+    },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "flagType": {
+      "enum": ["hidden_instruction", "cross_domain_data", "sensitive_data_outbound", "suspicious_redirect", "stuck_loop"]
+    },
+    "stepKind": {
+      "enum": ["navigate", "page_read", "click", "type", "form_submit", "network_request", "download", "agent_note", "error"]
+    },
+    "flag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "severity", "message", "evidence"],
+      "properties": {
+        "type": { "$ref": "#/$defs/flagType" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "message": { "type": "string" },
+        "evidence": { "type": "string" }
+      }
+    },
+    "stepRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "url"],
+      "properties": {
+        "method": { "type": "string" },
+        "url": { "type": "string" },
+        "bodyPreview": { "type": "string", "description": "Redacted, at most 2048 characters; only stored at capture level `full`." },
+        "resourceType": { "type": "string", "description": "xmlhttprequest, ping, image, websocket, sub_frame, ..." },
+        "status": { "type": "integer" },
+        "bodyBytes": { "type": "integer", "minimum": 0 },
+        "contentType": { "type": "string" },
+        "contentLength": { "type": "integer", "minimum": 0 },
+        "error": { "type": "string" },
+        "source": { "enum": ["webRequest", "deep"] }
+      }
+    },
+    "diagnosedElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selector", "tag", "text", "visible", "disabled", "inViewport"],
+      "properties": {
+        "selector": { "type": "string" },
+        "tag": { "type": "string" },
+        "text": { "type": "string" },
+        "visible": { "type": "boolean" },
+        "disabled": { "type": "boolean" },
+        "inViewport": { "type": "boolean" },
+        "pointerEvents": { "type": "string" },
+        "coveredBy": { "type": "string" }
+      }
+    },
+    "failureDiagnosis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selector", "matchCount", "elements", "reasons", "similar"],
+      "properties": {
+        "selector": { "type": "string" },
+        "matchCount": { "type": "integer", "description": "-1 when the selector could not be evaluated." },
+        "elements": { "type": "array", "items": { "$ref": "#/$defs/diagnosedElement" } },
+        "reasons": { "type": "array", "items": { "type": "string" } },
+        "similar": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "pageTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "visibleChars", "hiddenChars", "boilerplateChars", "boilerplateShare", "estimated"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "visibleChars": { "type": "integer", "minimum": 0 },
+        "hiddenChars": { "type": "integer", "minimum": 0 },
+        "boilerplateChars": { "type": "integer", "minimum": 0 },
+        "boilerplateShare": { "type": "number", "minimum": 0, "maximum": 1 },
+        "estimated": { "const": true }
+      }
+    },
+    "step": {
+      "description": "One line of steps.jsonl.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runId", "index", "kind", "timestamp", "flags"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
+        "runId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
+        "index": { "type": "integer", "minimum": 0 },
+        "kind": { "$ref": "#/$defs/stepKind" },
+        "timestamp": { "type": "number", "description": "Milliseconds since the Unix epoch." },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "url": { "type": "string" },
+        "targetSelector": { "type": "string" },
+        "targetText": { "type": "string" },
+        "request": { "$ref": "#/$defs/stepRequest" },
+        "snapshotRef": { "type": "string", "pattern": "^snapshots/[A-Za-z0-9_-]{1,128}\\.txt$" },
+        "flags": { "type": "array", "items": { "$ref": "#/$defs/flag" } },
+        "causedBy": { "type": "string", "description": "Id of the step that most likely caused this one." },
+        "error": { "type": "string" },
+        "diagnosis": { "$ref": "#/$defs/failureDiagnosis" },
+        "tokens": { "$ref": "#/$defs/pageTokens" }
+      }
+    },
+    "runMeta": {
+      "type": "object",
+      "description": "Free-form metadata. Reserved keys: `sdk` (typescript | python | ...), `sdkVersion`, `captureLevel` (minimal | standard | full) and `analyzed` (false until `steplight analyze` has run the detectors on the run; absent in runs recorded before it existed, which were analysed while recording).",
+      "additionalProperties": { "anyOf": [{ "type": "string" }, { "type": "boolean" }] },
+      "properties": {
+        "sdk": { "type": "string" },
+        "sdkVersion": { "type": "string" },
+        "captureLevel": { "enum": ["minimal", "standard", "full"] },
+        "analyzed": { "type": "boolean" }
+      }
+    },
+    "runJson": {
+      "description": "The content of run.json (steps live in steps.jsonl).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formatVersion", "id", "task", "startedAt", "status", "meta"],
+      "properties": {
+        "formatVersion": { "$ref": "#/$defs/formatVersion" },
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
+        "task": { "type": "string" },
+        "startedAt": { "type": "number" },
+        "endedAt": { "type": "number" },
+        "status": { "enum": ["running", "success", "failed"] },
+        "meta": { "$ref": "#/$defs/runMeta" }
+      }
+    },
+    "domTextNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "display": { "type": "string" },
+        "visibility": { "type": "string" },
+        "opacity": { "type": "number" },
+        "fontSizePx": { "type": "number" },
+        "rect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y", "width", "height"],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "width": { "type": "number" },
+            "height": { "type": "number" }
+          }
+        },
+        "color": { "type": "string" },
+        "backgroundColor": { "type": "string" },
+        "ariaHidden": { "type": "boolean" },
+        "hiddenAttr": { "type": "boolean" },
+        "source": { "enum": ["text", "comment", "attribute"] },
+        "landmark": { "enum": ["nav", "footer", "aside", "cookie", "ads"] }
+      }
+    },
+    "pageScan": {
+      "description": "What spec/page-scan.js reports for a page: all text (hidden included) plus per-node styling facts. Text is redacted before it is written.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "title", "text", "dom"],
+      "properties": {
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "text": { "type": "string" },
+        "dom": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nodes"],
+          "properties": {
+            "url": { "type": "string" },
+            "nodes": { "type": "array", "items": { "$ref": "#/$defs/domTextNode" } }
+          }
+        }
+      }
+    },
+    "analysisInput": {
+      "description": "One line of analysis-input.jsonl: the raw material the detectors need for one step, written (redacted) by an SDK that does not run the detectors itself. `steplight analyze` reads it, writes the flags into steps.jsonl, sets meta.analyzed and deletes the file, so request bodies and page text it holds do not outlive the analysis.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stepId"],
+      "properties": {
+        "stepId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
+        "scan": { "$ref": "#/$defs/pageScan" },
+        "rescan": { "type": "boolean", "description": "The scan is a re-read of a page already read (late-injected text, client-side route change): only evidence that was not in the earlier read is flagged." },
+        "body": { "type": "string", "description": "Redacted request body preview (at most 2048 characters) for the step's request." }
+      }
+    },
+    "encryptedEnvelope": {
+      "description": "Encryption at rest (AES-256-GCM). The additional authenticated data is `<runId>/<file>` (for example `20261008-101500-a1b2c3/steps.jsonl`; snapshots use their snapshotRef). `iv` is 12 random bytes, `tag` the 16-byte GCM tag, `ct` the ciphertext, all base64. JSON is compact with exactly this key order, so the file starts with `{\"steplight\":\"enc-v1\"`.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["steplight", "iv", "tag", "ct"],
+      "properties": {
+        "steplight": { "const": "enc-v1" },
+        "iv": { "type": "string", "pattern": "^[A-Za-z0-9+/]{16}$" },
+        "tag": { "type": "string", "pattern": "^[A-Za-z0-9+/]{22}==$" },
+        "ct": { "type": "string", "pattern": "^[A-Za-z0-9+/]*={0,2}$" }
+      }
+    }
+  }
+}

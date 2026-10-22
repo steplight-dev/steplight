@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { collectPageScan, type PageScan } from "@steplight/core";
+import type { PageScan } from "@steplight/core";
 
 /** Name of the Playwright binding the injected script reports through. */
 export const BINDING_NAME = "__steplightEmit";
 
-/** A page scan taken inside the page when it finished loading. */
+/**
+ * A page scan taken inside the page. `load` = the document finished loading, `rescan` = text that was
+ * not there at load time appeared about a second later (late injection), `spa` = a client-side route change.
+ */
 export interface ScanEvent {
   type: "scan";
+  reason: "load" | "rescan" | "spa";
   scan: PageScan;
 }
 
@@ -162,19 +166,79 @@ export function installPageListeners(bindingName: string): void {
 }
 
 /**
- * Source of an init script that runs `collectPageScan` when the document has loaded and reports
- * the result through the binding. Built from the real function so there is one implementation.
+ * Page-side script: scans the page when it has loaded, again after a second if text it had not
+ * contained appears (late injection), and after a client-side route change (`history.pushState`,
+ * `replaceState`, `popstate`, `hashchange`), and reports each scan through the binding. Scanning
+ * happens inside the page so an agent that navigates away immediately cannot race the snapshot.
+ * Self-contained (serialised into spec/page-scan.js); `scan` is `collectPageScan`.
  */
-export function scanOnLoadScript(): string {
-  return `(() => {
-  const scan = ${collectPageScan.toString()};
-  const emit = () => {
+export function installScanning(bindingName: string, scan: () => unknown): void {
+  const w: any = globalThis;
+  if (w.__steplightScanning) return;
+  w.__steplightScanning = true;
+  const RESCAN_MS = 1000;
+  const ROUTE_DEBOUNCE_MS = 300;
+  const seen = new Set<string>();
+  let lastHref = "";
+  let routeTimer: any;
+  const send = (reason: string, result: unknown): void => {
     try {
-      const f = window[${JSON.stringify(BINDING_NAME)}];
-      if (typeof f === "function") f({ type: "scan", scan: scan() });
-    } catch (e) { /* fail open */ }
+      const fn = w[bindingName];
+      if (typeof fn === "function") void Promise.resolve(fn({ type: "scan", reason, scan: result })).catch(() => undefined);
+    } catch {
+      /* fail open */
+    }
   };
-  if (document.readyState === "complete") emit();
-  else window.addEventListener("load", emit, { once: true });
-})();`;
+  const rescan = (): void => {
+    try {
+      if (String(w.location.href) !== lastHref) return; // the route changed meanwhile: its own scan covers it
+      const result: any = scan();
+      const fresh = result.dom.nodes.filter((n: any) => !seen.has(n.text) && String(n.text).length >= 8);
+      if (fresh.length === 0) return;
+      for (const n of result.dom.nodes) seen.add(n.text);
+      send("rescan", result);
+    } catch {
+      /* fail open */
+    }
+  };
+  const take = (reason: string): void => {
+    try {
+      const result: any = scan();
+      lastHref = String(w.location.href);
+      seen.clear();
+      for (const n of result.dom.nodes) seen.add(n.text);
+      send(reason, result);
+      setTimeout(rescan, RESCAN_MS);
+    } catch {
+      /* fail open */
+    }
+  };
+  const routeChanged = (): void => {
+    try {
+      if (String(w.location.href) === lastHref) return;
+      clearTimeout(routeTimer);
+      routeTimer = setTimeout(() => take("spa"), ROUTE_DEBOUNCE_MS);
+    } catch {
+      /* fail open */
+    }
+  };
+  try {
+    for (const name of ["pushState", "replaceState"]) {
+      const original = w.history[name];
+      // A Proxy keeps the native name, length and toString() of the method the page sees.
+      w.history[name] = new Proxy(original, {
+        apply(target: any, thisArg: any, args: any[]) {
+          const result = Reflect.apply(target, thisArg, args);
+          routeChanged();
+          return result;
+        },
+      });
+    }
+    w.addEventListener("popstate", routeChanged);
+    w.addEventListener("hashchange", routeChanged);
+  } catch {
+    /* fail open */
+  }
+  if (w.document.readyState === "complete") take("load");
+  else w.addEventListener("load", () => take("load"), { once: true });
 }

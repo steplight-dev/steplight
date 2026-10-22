@@ -32,8 +32,8 @@ export function createBundle(run: Run, snapshots: Record<string, string> = {}): 
   };
 }
 
-function redactMeta(meta: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(Object.entries(meta).map(([k, v]) => [k, redactText(String(v))]));
+function redactMeta(meta: Record<string, string | boolean>): Record<string, string | boolean> {
+  return Object.fromEntries(Object.entries(meta).map(([k, v]) => [k, typeof v === "boolean" ? v : redactText(String(v))]));
 }
 
 function fail(reason: string): never {
@@ -82,7 +82,7 @@ export function parseBundle(text: string): RunBundle {
     else delete step.snapshotRef;
     steps.push(step);
   }
-  const meta = isObject(run["meta"]) ? redactMeta(run["meta"] as Record<string, string>) : {};
+  const meta = isObject(run["meta"]) ? redactMeta(run["meta"] as Record<string, string | boolean>) : {};
   const out: Run = {
     id: run["id"],
     task: redactText(String(run["task"])),

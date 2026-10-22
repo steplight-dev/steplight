@@ -204,9 +204,17 @@ const BEARER = /\b(?:bearer|basic)\s+[A-Za-z0-9._~+/=-]{16,}/gi;
 /** `password=…`, `"secret": "…"`, `api_key: …`. Only the value is redacted. */
 const PASSWORD_PAIR =
   /(?<![A-Za-z0-9])(?:pass(?:word|wd|phrase)?|pwd|secret|api[_-]?key|apikey|access[_-]?token|auth[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key|credentials?)s?(["']?[ \t]{0,3}[:=][ \t]{0,3}["']?)([^\s"'&;,<>\\]{3,200})/gi;
+/**
+ * A value that is one redaction marker (plus trailing punctuation the value pattern swallowed, like the `;` of a
+ * cookie) was redacted already: leave it, so redacting twice changes nothing. Anything else after the marker is
+ * still redacted.
+ */
+const isMarker = (value: string): boolean => /^\[REDACTED:[a-z_]+\][;,.)\]}]*$/.test(value);
+
 const passwordPairs: Scanner = (text, push) => {
   if (!text.includes(":") && !text.includes("=")) return;
   for (const m of text.matchAll(PASSWORD_PAIR)) {
+    if (isMarker(m[3]!)) continue;
     const end = (m.index ?? 0) + m[0].length;
     push(end - m[2]!.length, end, "password", 4);
   }
@@ -218,6 +226,7 @@ const URL_PARAM =
 const urlParams: Scanner = (text, push) => {
   if (!text.includes("=")) return;
   for (const m of text.matchAll(URL_PARAM)) {
+    if (isMarker(m[1]!)) continue;
     const end = (m.index ?? 0) + m[0].length;
     push(end - m[1]!.length, end, "url_param", 5);
   }
@@ -500,7 +509,7 @@ export function findSensitive(input: string, options: { credentials?: boolean } 
  * plus passwords, secret URL parameters, phone numbers and the user's custom patterns.
  * Text without findings is returned unchanged; otherwise escapes are decoded in the result.
  * Applying it twice gives the same result.
- * @example redactText("key sk-abcdefghijklmnopqrstuv") // "key [REDACTED:api_key]"
+ * @example redactText("mail jane@example.com") // "mail [REDACTED:email]"
  */
 export function redactText(input: string): string {
   try {

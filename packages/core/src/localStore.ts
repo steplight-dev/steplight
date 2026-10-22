@@ -27,7 +27,7 @@ interface RunMeta {
   status: RunStatus;
   startedAt: number;
   endedAt?: number;
-  meta: Record<string, string>;
+  meta: Record<string, string | boolean>;
   stepCount: number;
   flagCount: number;
   maxSeverity?: RunSummary["maxSeverity"];

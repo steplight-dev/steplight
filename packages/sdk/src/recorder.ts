@@ -12,7 +12,6 @@ import {
   recordingBlockedReason,
   buildDiagnosis,
   collectFailureContext,
-  collectPageScan,
   computeTokenStats,
   exportRunOtlp,
   hiddenInstruction,
@@ -22,6 +21,7 @@ import {
   newStepId,
   siteOf,
   truncate,
+  VERSION,
   MAX_BODY_PREVIEW,
   DEFAULT_RUNS_DIR,
   type CaptureLevel,
@@ -34,16 +34,16 @@ import {
   type Step,
   type StepKind,
 } from "@steplight/core/node";
-import { BINDING_NAME, installPageListeners, scanOnLoadScript, type PageEvent, type ScanEvent } from "./inject.js";
+import { BINDING_NAME, type PageEvent, type ScanEvent } from "./inject.js";
+import { pageScanScript } from "./pageScript.js";
 
-/** Same origin and path (ignoring query and hash), i.e. possibly the same document after a route change. */
-function samePage(a: string, b: string): boolean {
+/** Origin and path of a URL (query and hash ignored): the key under which evidence already flagged on a page is remembered. */
+function pageKey(url: string): string {
   try {
-    const x = new URL(a);
-    const y = new URL(b);
-    return x.origin === y.origin && x.pathname === y.pathname;
+    const u = new URL(url);
+    return `${u.origin}${u.pathname}`;
   } catch {
-    return a === b;
+    return url;
   }
 }
 
@@ -89,9 +89,6 @@ export interface RunHandle {
   end(status?: Exclude<RunStatus, "running">): Promise<Run>;
 }
 
-/** Delay before a page is scanned a second time to catch text injected after load. */
-const RESCAN_DELAY_MS = 1000;
-
 function logError(where: string, err: unknown): void {
   process.stderr.write(`[steplight] ${where}: ${err instanceof Error ? err.message : String(err)}\n`);
 }
@@ -108,7 +105,8 @@ class Recorder implements RunHandle {
   private lastNavUrl: string | undefined;
   private readonly seenSelectors = new Set<string>();
   private readonly wrapped: string[] = [];
-  private readonly timers = new Set<ReturnType<typeof setTimeout>>();
+  /** Hidden-instruction evidence already flagged per page, so a re-read only reports what is new. */
+  private readonly knownEvidence = new Map<string, Set<string>>();
 
   constructor(
     private readonly page: Page,
@@ -123,7 +121,7 @@ class Recorder implements RunHandle {
       startedAt: Date.now(),
       status: "running",
       steps: [],
-      meta: { ...options.meta },
+      meta: { ...options.meta, sdk: "typescript", sdkVersion: VERSION, captureLevel: options.captureLevel ?? "standard", analyzed: true },
     };
     this.root = root;
   }
@@ -172,17 +170,17 @@ class Recorder implements RunHandle {
       if (source.frame !== page.mainFrame()) return;
       const ts = Date.now();
       if (event.type === "scan") {
-        this.enqueue("page_read", () => this.onScan(event.scan, ts));
+        this.enqueue("page_read", () => this.onScan(event.scan, ts, event.reason));
         return;
       }
       const url = page.url();
       this.enqueue("event", () => this.onPageEvent(event, ts, url));
     });
-    await page.addInitScript(installPageListeners, BINDING_NAME);
-    // Scan each page *inside* the page at load time and push the result through the binding, so
-    // an agent that navigates away immediately after goto() cannot race the snapshot.
-    await page.addInitScript({ content: scanOnLoadScript() });
-    await page.evaluate(installPageListeners, BINDING_NAME).catch(() => undefined);
+    // One standalone script (spec/page-scan.js, shared with the other SDKs) scans each page *inside*
+    // the page and pushes the result through the binding, so an agent that navigates away immediately
+    // after goto() cannot race the snapshot. It also reports clicks, field changes and form submits.
+    const script = pageScanScript();
+    await page.addInitScript({ content: script });
 
     page.on("framenavigated", (frame: Frame) => {
       if (frame !== page.mainFrame()) return;
@@ -211,66 +209,33 @@ class Recorder implements RunHandle {
 
     this.wrapActions();
 
-    // Already on a page when recording started: record it too.
+    // Already on a page when recording started: record it too (the navigate step goes first, then the
+    // script runs in the loaded document and reports its scan).
     if (page.url() && page.url() !== "about:blank") {
       const ts = Date.now();
       this.enqueue("initial", async () => {
         this.lastNavUrl = page.url();
         await this.addStep("navigate", ts, { url: page.url() });
-        await this.captureNow(ts);
       });
+      await page.evaluate(script).catch(() => undefined);
     }
   }
 
-  /** Scan the page that is already loaded when recording starts. */
-  private async captureNow(ts: number): Promise<void> {
-    let scan: PageScan;
-    try {
-      scan = await this.page.evaluate(collectPageScan);
-    } catch (err) {
-      // The agent navigated away mid-scan: expected and harmless, so stay quiet about it.
-      if (!/context was destroyed|navigat|Target (page|closed)/i.test(String(err))) logError("snapshot", err);
-      return;
+  private async onScan(scan: PageScan, ts: number, reason: ScanEvent["reason"]): Promise<void> {
+    const key = pageKey(scan.url);
+    const known = this.knownEvidence.get(key) ?? new Set<string>();
+    let flags = hiddenInstruction(scan.dom);
+    let title = scan.title;
+    if (reason !== "load") {
+      // A re-read (text injected after load, client-side route change): only report what is new.
+      flags = flags.filter((f) => !known.has(f.evidence));
+      if (flags.length === 0) return;
+      title = `${scan.title} (${reason === "spa" ? "client-side route change" : "content changed after load"})`;
     }
-    await this.onScan(scan, ts);
-  }
-
-  private async onScan(scan: PageScan, ts: number): Promise<void> {
+    for (const f of flags) known.add(f.evidence);
+    this.knownEvidence.set(key, known);
     this.pages.push({ url: scan.url, text: scan.text });
-    const flags = hiddenInstruction(scan.dom);
-    await this.addStep(
-      "page_read",
-      ts,
-      { url: scan.url, targetText: scan.title, flags, tokens: computeTokenStats(scan) },
-      scan.text,
-    );
-    this.scheduleRescan(scan.url, new Set(flags.map((f) => f.evidence)));
-  }
-
-  /** Scan the page again shortly after load: catches instructions injected by scripts (setTimeout). */
-  private scheduleRescan(url: string, known: Set<string>): void {
-    const timer = setTimeout(() => {
-      this.timers.delete(timer);
-      if (!this.ended) this.enqueue("rescan", () => this.rescan(url, known));
-    }, RESCAN_DELAY_MS);
-    timer.unref?.();
-    this.timers.add(timer);
-  }
-
-  private async rescan(url: string, known: Set<string>): Promise<void> {
-    // The agent already moved on to another page: its own load scan covers that one. A client-side
-    // route change (same path, new query/hash via history.pushState) is still the same document.
-    if (!samePage(this.page.url(), url)) return;
-    const scan = await this.page.evaluate(collectPageScan);
-    const fresh = hiddenInstruction(scan.dom).filter((f) => !known.has(f.evidence));
-    if (fresh.length === 0) return;
-    this.pages.push({ url: scan.url, text: scan.text });
-    await this.addStep(
-      "page_read",
-      Date.now(),
-      { url: scan.url, targetText: `${scan.title} (content changed after load)`, flags: fresh, tokens: computeTokenStats(scan) },
-      scan.text,
-    );
+    await this.addStep("page_read", ts, { url: scan.url, targetText: title, flags, tokens: computeTokenStats(scan) }, scan.text);
   }
 
   /** Record background requests: fetch, XHR, beacons and third-party images (pixels). */
@@ -479,8 +444,6 @@ class Recorder implements RunHandle {
   async end(status: Exclude<RunStatus, "running"> = "success"): Promise<Run> {
     if (!this.ended) {
       this.ended = true;
-      for (const t of this.timers) clearTimeout(t);
-      this.timers.clear();
       this.unwrapActions();
       await this.chain;
       const endedAt = Date.now();

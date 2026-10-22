@@ -1,5 +1,18 @@
 # Progress
 
+## 0.2.0 (Python SDK): in progress
+
+Task list (updated as parts finish):
+
+- [x] A. Shared contract: `spec/run-format.schema.json`, `redaction-vectors.json` (562 cases), `never-capture.json`, `page-scan.js` (TS SDK uses the same file); `pnpm spec` regenerates, tests detect drift
+- [ ] B. `steplight analyze` + auto-analysis in view/check/diff/report/export/check-action
+- [ ] C. Python package (`python/`): recorder, redaction port, encryption, OTel
+- [ ] D. Browser Use integration
+- [ ] E. Python tests, conformance, cross-language encryption, perf guard
+- [ ] F. Tooling (uv, ruff, mypy), CI matrix, pip-audit, Dependabot, SBOM
+- [ ] G. Release pipeline (PyPI / TestPyPI trusted publishing; not tagged)
+- [ ] H. Docs
+
 ## npm: 0.1.0 (final)
 
 - Five packages: `steplight` (new, unscoped: SDK + `steplight` command), `@steplight/core`, `sdk`, `cli`, `redteam`. `0.1.0-rc.3` validated the unscoped package and its Trusted Publisher in CI: all five on `next` with provenance, `latest` untouched; fresh-install smoke test (`npm i -D steplight@next playwright`, `--version`, `--help`, record a local page, `check --latest`) and `npm audit signatures` (npm 11: 22 signatures, 20 attestations verified) passed.

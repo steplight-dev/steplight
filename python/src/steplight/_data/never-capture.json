@@ -1,0 +1,487 @@
+{
+  "formatVersion": 1,
+  "description": "Fields whose contents Steplight never reads, whatever the capture level or settings. Generated from packages/core/src/neverCapture.ts by `pnpm spec`. An SDK must apply these rules (the shared page script already does, in the browser) and pass every case below. Patterns are JavaScript regular expressions; `splitCamelCase` is applied to name, id, aria-label, placeholder and label before `namePattern` is tested against their space-joined text.",
+  "inputTypes": [
+    "password"
+  ],
+  "autocompletePattern": {
+    "source": "(^|\\s)(cc-[a-z-]+|one-time-code|current-password|new-password)(\\s|$)",
+    "flags": "i"
+  },
+  "namePattern": {
+    "source": "(^|[^a-z0-9])(card|cc|cvv|cvc|csc|otp|pin|ssn|aadhaar|aadhar|pan|passcode|password|passwd|pwd|iban|secret|token|csrf)\\d{0,2}([^a-z0-9]|$)|cardnum|creditcard|ccnum|cvv2|cardno|panno|aadhaarno",
+    "flags": "i"
+  },
+  "splitCamelCase": {
+    "source": "([a-z0-9])([A-Z])",
+    "flags": "g",
+    "replacement": "$1_$2"
+  },
+  "editableTags": [
+    "input",
+    "textarea",
+    "select"
+  ],
+  "paymentFrameHosts": [
+    "stripe.com",
+    "js.stripe.com",
+    "paypal.com",
+    "braintreegateway.com",
+    "adyen.com",
+    "checkout.com",
+    "razorpay.com",
+    "paytm.com",
+    "payu.in",
+    "payu.com",
+    "squareup.com",
+    "squarecdn.com",
+    "worldpay.com",
+    "authorize.net",
+    "cybersource.com",
+    "klarna.com",
+    "mollie.com",
+    "recurly.com",
+    "bluesnap.com"
+  ],
+  "fieldCases": [
+    {
+      "descriptor": {
+        "tag": "input",
+        "type": "password"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "type": "PASSWORD"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "type": "text",
+        "name": "email"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "type": "email",
+        "name": "email",
+        "autocomplete": "email"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "cardNumber"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "card_number"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "cc-number"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "ccnum"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "creditcard"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "cvv"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "cvc2"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "csc"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "id": "otp"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "id": "OTP-code"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "userPin"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "pin_code"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "pinterest"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "shipping"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "ssn"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "aadhaar"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "aadhaarNo"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "pan"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "panno"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "company"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "passcode"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "passwd"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "iban"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "secret"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "csrf_token"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "csrfToken"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "token"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "tokenizer"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "autocomplete": "cc-number"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "autocomplete": "cc-exp"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "autocomplete": "one-time-code"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "autocomplete": "current-password"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "autocomplete": "new-password"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "autocomplete": "username"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "autocomplete": "name email cc-csc"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "ariaLabel": "Card number"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "ariaLabel": "Search"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "placeholder": "Enter your PIN"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "label": "Security code (CVV)"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "textarea",
+        "name": "cardnote"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "textarea",
+        "name": "notes"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "select",
+        "name": "card"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "div",
+        "contentEditable": true,
+        "ariaLabel": "CVV"
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "div",
+        "contentEditable": true,
+        "ariaLabel": "Comment"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "input",
+        "name": "q",
+        "inPaymentFrame": true
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "div",
+        "contentEditable": true,
+        "inPaymentFrame": true
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "div",
+        "inPaymentFrame": true
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {
+        "tag": "button",
+        "name": "card",
+        "inPaymentFrame": true
+      },
+      "neverCapture": true
+    },
+    {
+      "descriptor": {
+        "tag": "input"
+      },
+      "neverCapture": false
+    },
+    {
+      "descriptor": {},
+      "neverCapture": false
+    }
+  ],
+  "urlCases": [
+    {
+      "url": "https://js.stripe.com/v3/",
+      "paymentFrame": true
+    },
+    {
+      "url": "https://checkout.stripe.com/pay",
+      "paymentFrame": true
+    },
+    {
+      "url": "https://www.paypal.com/checkoutnow",
+      "paymentFrame": true
+    },
+    {
+      "url": "https://notstripe.com/",
+      "paymentFrame": false
+    },
+    {
+      "url": "https://stripe.com.evil.example/",
+      "paymentFrame": false
+    },
+    {
+      "url": "https://example.com/stripe.com",
+      "paymentFrame": false
+    },
+    {
+      "url": "https://pay.razorpay.com/x",
+      "paymentFrame": true
+    },
+    {
+      "url": "https://api.payu.in/",
+      "paymentFrame": true
+    },
+    {
+      "url": "http://localhost:3000/",
+      "paymentFrame": false
+    },
+    {
+      "url": "not a url",
+      "paymentFrame": false
+    },
+    {
+      "url": "",
+      "paymentFrame": false
+    }
+  ]
+}
