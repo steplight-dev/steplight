@@ -35,7 +35,8 @@ export interface DomInfo {
 /** Zero-width and invisible formatting characters used to obfuscate text. */
 const ZERO_WIDTH = /[\u200B-\u200F\u2060-\u2064\uFEFF]/g;
 
-const SEND_TARGET = String.raw`(?:\S+@\S+|https?:\/\/\S+|the\s+(?:url|address|email|server|following)|this\s+(?:address|email|url)|my\s+(?:server|email|address))`;
+// `[REDACTED:email]` counts as a target: SDKs that redact before they analyse (the Python SDK) have already replaced the address.
+const SEND_TARGET = String.raw`(?:\S+@\S+|\[REDACTED:email\]|https?:\/\/\S+|the\s+(?:url|address|email|server|following)|this\s+(?:address|email|url)|my\s+(?:server|email|address))`;
 
 /** Instruction-like phrases aimed at an AI model rather than a human reader. */
 export const INSTRUCTION_PATTERNS: readonly RegExp[] = [

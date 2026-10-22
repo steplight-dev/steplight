@@ -5,7 +5,7 @@
 Task list (updated as parts finish):
 
 - [x] A. Shared contract: `spec/run-format.schema.json`, `redaction-vectors.json` (562 cases), `never-capture.json`, `page-scan.js` (TS SDK uses the same file); `pnpm spec` regenerates, tests detect drift
-- [ ] B. `steplight analyze` + auto-analysis in view/check/diff/report/export/check-action
+- [x] B. `steplight analyze` + auto-analysis in view/check/diff/report/export/tokens/check-action (hand-made unanalyzed fixture tests in core, cli, check-action)
 - [ ] C. Python package (`python/`): recorder, redaction port, encryption, OTel
 - [ ] D. Browser Use integration
 - [ ] E. Python tests, conformance, cross-language encryption, perf guard

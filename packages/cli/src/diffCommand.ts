@@ -1,4 +1,4 @@
-import { diffRuns, readRun, readSnapshot, type Run, type RunDiff, type Step } from "@steplight/core/node";
+import { diffRuns, ensureAnalyzed, readRun, readSnapshot, type Run, type RunDiff, type Step } from "@steplight/core/node";
 
 /**
  * Load two stored runs and diff them, including the page text each was looking at when they
@@ -10,6 +10,8 @@ export async function diffStored(
   idA: string,
   idB: string,
 ): Promise<{ diff: RunDiff; runA: Run; runB: Run }> {
+  await ensureAnalyzed(root, idA);
+  await ensureAnalyzed(root, idB);
   const [runA, runB] = await Promise.all([readRun(root, idA), readRun(root, idB)]);
   const first = diffRuns(runA, runB);
   const d = first.divergence;

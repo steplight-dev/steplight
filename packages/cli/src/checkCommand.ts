@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { VERSION, checkRun, listRuns, parseRules, readRun } from "@steplight/core/node";
+import { VERSION, checkRun, ensureAnalyzed, listRuns, parseRules, readRun } from "@steplight/core/node";
 import { parse as parseYaml } from "yaml";
 import { formatCheck, type CheckFormat } from "./checkFormats.js";
 
@@ -39,6 +39,8 @@ export async function runCheck(opts: CheckOptions): Promise<{ output: string; ex
     return { output: `steplight: invalid rules in ${opts.rulesFile}: ${err instanceof Error ? err.message : String(err)}`, exitCode: EXIT.error };
   }
 
+  // Runs from SDKs that leave the detectors to us are analysed first, so the rules see the flags.
+  await ensureAnalyzed(dir, opts.latest ? undefined : opts.runId);
   let runId = opts.runId;
   if (opts.latest) {
     runId = (await listRuns(dir))[0]?.id;

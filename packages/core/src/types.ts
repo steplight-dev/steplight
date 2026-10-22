@@ -117,6 +117,8 @@ export interface Step {
   flags: Flag[];
   /** Id of the step that most likely caused this step. */
   causedBy?: string;
+  /** Id of the `agent_note` step in which the agent chose this action (decision trace; set by agent integrations). */
+  decidedBy?: string;
   /** Error message when the action failed (e.g. a click that timed out). */
   error?: string;
   /** Why the action failed. */

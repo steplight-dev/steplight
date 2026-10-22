@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { formatCheck, type CheckContext } from "@steplight/cli/check";
 import { VERSION, checkRun, maxSeverity, parseRules, severityRank, type CheckResult, type Finding, type Rules, type Severity } from "@steplight/core";
+import { ensureAnalyzed } from "@steplight/core/analyze";
 import { listRuns, readRun } from "@steplight/core/run-store";
 import { parse as parseYaml } from "yaml";
 import { DEFAULT_RULES_FILE, type ActionInputs } from "./inputs.js";
@@ -56,6 +57,8 @@ export async function runCheckAction(inputs: ActionInputs): Promise<CheckOutcome
   const notes: string[] = [];
   const rules = await loadRules(inputs, notes);
 
+  // Runs recorded by the Python SDK carry no flags until the detectors have run: do that first.
+  await ensureAnalyzed(inputs.runsDir, inputs.runId);
   let runId = inputs.runId;
   if (!runId) {
     runId = (await listRuns(inputs.runsDir))[0]?.id;

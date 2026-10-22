@@ -11,6 +11,7 @@ import {
   newRunId,
   appendAudit,
   applyCaptureLevel,
+  ensureAnalyzed,
   configureRedaction,
   parseBundle,
   purgeRuns,
@@ -270,7 +271,10 @@ export function createViewerServer(options: ServerOptions): ViewerServer {
       return json(res, 200, { id: run.id });
     }
     if (req.method !== "GET") return json(res, 405, { error: "method not allowed" });
-    if (url.pathname === "/api/runs") return json(res, 200, await listRuns(options.runsDir));
+    if (url.pathname === "/api/runs") {
+      await ensureAnalyzed(options.runsDir);
+      return json(res, 200, await listRuns(options.runsDir));
+    }
     if (parts[1] === "runs" && parts[2]) {
       let id: string;
       try {
@@ -279,6 +283,7 @@ export function createViewerServer(options: ServerOptions): ViewerServer {
         return json(res, 400, { error: "bad run id" });
       }
       if (!isSafeId(id)) return json(res, 400, { error: "bad run id" });
+      await ensureAnalyzed(options.runsDir, id);
       const run = await readRun(options.runsDir, id).catch(() => undefined);
       if (!run) return json(res, 404, { error: "run not found" });
       if (parts.length === 3) return json(res, 200, run);

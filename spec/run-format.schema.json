@@ -108,6 +108,7 @@
         "snapshotRef": { "type": "string", "pattern": "^snapshots/[A-Za-z0-9_-]{1,128}\\.txt$" },
         "flags": { "type": "array", "items": { "$ref": "#/$defs/flag" } },
         "causedBy": { "type": "string", "description": "Id of the step that most likely caused this one." },
+        "decidedBy": { "type": "string", "description": "Id of the agent_note step in which the agent chose this action (decision trace; set by agent integrations such as Browser Use)." },
         "error": { "type": "string" },
         "diagnosis": { "$ref": "#/$defs/failureDiagnosis" },
         "tokens": { "$ref": "#/$defs/pageTokens" }

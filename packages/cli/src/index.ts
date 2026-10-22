@@ -2,7 +2,7 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
-import { DEFAULT_RUNS_DIR, formatTokens, summarizeTokens, clearRuns, exportRunOtlp, generatePlaywrightTest, appendAudit, auditFilePath, countEncryptedRuns, effectiveEncryption, loadPolicy, readAuditFile, verifyAuditLog, type Policy, listRuns, purgeRuns, readRun, DEFAULT_OTLP_ENDPOINT } from "@steplight/core/node";
+import { DEFAULT_RUNS_DIR, analyzeStoredRun, analyzeStoredRuns, ensureAnalyzed, formatTokens, summarizeTokens, clearRuns, exportRunOtlp, generatePlaywrightTest, appendAudit, auditFilePath, countEncryptedRuns, effectiveEncryption, loadPolicy, readAuditFile, verifyAuditLog, type Policy, listRuns, purgeRuns, readRun, DEFAULT_OTLP_ENDPOINT } from "@steplight/core/node";
 import { exportOptionsFromFlags, renderStoredBundle, renderStoredExport, renderStoredReport, type ExportFlags } from "./reportCommand.js";
 import { runCheck } from "./checkCommand.js";
 import { registerRedteam } from "./redteamCommand.js";
@@ -88,6 +88,8 @@ export function buildProgram(): Command {
         const old = (await listRuns(runsDir).catch(() => [])).filter((r) => r.startedAt < Date.now() - 7 * 86_400_000).length;
         if (old > 0) console.log(`${old} stored run(s) are older than 7 days. Remove them with: steplight purge --older-than-days 7`);
       }
+      // Runs recorded by SDKs that leave the detectors to us (Python) are analysed before anything is shown.
+      await ensureAnalyzed(runsDir);
       appendAudit(auditFilePath(runsDir), "server_started", { host, encrypted: Boolean(effectiveEncryption()), policy: Object.keys(policy).join(",") });
       const server = createViewerServer({
         runsDir,
@@ -178,6 +180,7 @@ export function buildProgram(): Command {
           console.log(`Wrote ${out}${options.password ? " (password-protected)" : ""}.`);
           return;
         }
+        await ensureAnalyzed(path.resolve(opts.dir), runId);
         const run = await readRun(path.resolve(opts.dir), runId);
         if (!opts.otlp) {
           console.log(JSON.stringify(run, null, 2));
@@ -210,6 +213,35 @@ export function buildProgram(): Command {
       }
       const deleted = await clearRuns(path.resolve(opts.dir), { keep });
       console.log(`Deleted ${deleted.length} run${deleted.length === 1 ? "" : "s"}${keep ? `, kept the newest ${keep}` : ""}.`);
+    });
+
+  program
+    .command("analyze [runId]")
+    .description("Run the detectors on runs recorded by an SDK that leaves them to us (the Python SDK): writes the flags, then marks the run analysed")
+    .option("--all", "analyze every run that has not been analyzed yet")
+    .option("--include-running", "also analyze runs still marked as running (a recording that crashed; never while an SDK is writing)")
+    .option("--json", "print the results as JSON")
+    .option("-d, --dir <dir>", "runs directory", process.env.STEPLIGHT_DIR ?? DEFAULT_RUNS_DIR)
+    .action(async (runId: string | undefined, opts: { all?: boolean; includeRunning?: boolean; json?: boolean; dir: string }) => {
+      if (!runId === !opts.all) {
+        console.error("steplight: give a <runId> or --all");
+        process.exitCode = 2;
+        return;
+      }
+      const dir = path.resolve(opts.dir);
+      const options = { ...(opts.includeRunning ? { includeRunning: true } : {}) };
+      const results = runId ? [await analyzeStoredRun(dir, runId, options)] : await analyzeStoredRuns(dir, options);
+      if (opts.json) console.log(JSON.stringify(results, null, 2));
+      else {
+        for (const r of results) {
+          const note =
+            r.status === "analyzed" ? `analyzed, ${r.flags} flag${r.flags === 1 ? "" : "s"}` : r.status === "already-analyzed" ? "already analyzed" : r.status === "still-running" ? "still recording (use --include-running if it crashed)" : `error: ${r.error}`;
+          if (r.status !== "already-analyzed" || runId) console.log(`${r.runId}: ${note}`);
+        }
+        const done = results.filter((r) => r.status === "analyzed").length;
+        console.log(`${done} run${done === 1 ? "" : "s"} analyzed, ${results.filter((r) => r.status === "already-analyzed").length} already analyzed.`);
+      }
+      if (results.some((r) => r.status === "error")) process.exitCode = 1;
     });
 
   program
@@ -351,6 +383,7 @@ export function buildProgram(): Command {
     .option("-d, --dir <dir>", "runs directory", process.env.STEPLIGHT_DIR ?? DEFAULT_RUNS_DIR)
     .action(async (runId: string, opts: { json?: boolean; dir: string }) => {
       try {
+        await ensureAnalyzed(path.resolve(opts.dir), runId);
         const s = summarizeTokens(await readRun(path.resolve(opts.dir), runId));
         if (opts.json) return void console.log(JSON.stringify(s, null, 2));
         if (s.pages === 0) return void console.log("No token estimates in this run (record page reads with the current SDK).");

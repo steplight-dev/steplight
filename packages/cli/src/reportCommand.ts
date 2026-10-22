@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
   createBundle,
+  ensureAnalyzed,
   readRun,
   readSnapshot,
   packageHtmlExport,
@@ -16,6 +17,7 @@ import {
  * @example const bundle = await loadBundle(".steplight/runs", "20261008-101500-a1b2c3")
  */
 export async function loadBundle(root: string, runId: string): Promise<RunBundle> {
+  await ensureAnalyzed(root, runId);
   const run = await readRun(root, runId);
   const snapshots: Record<string, string> = {};
   for (const step of run.steps) {

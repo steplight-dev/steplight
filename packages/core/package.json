@@ -22,6 +22,10 @@
     "./run-store": {
       "types": "./dist/storage/runStore.d.ts",
       "default": "./dist/storage/runStore.js"
+    },
+    "./analyze": {
+      "types": "./dist/storage/analyzeStore.d.ts",
+      "default": "./dist/storage/analyzeStore.js"
     }
   },
   "files": [
