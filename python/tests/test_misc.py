@@ -9,7 +9,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
 
 import steplight
 from steplight.otel import export_run_otlp

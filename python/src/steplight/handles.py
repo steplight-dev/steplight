@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, Literal
 
-from ._attach import Attachment
+from ._attach import Attachment, ContextAttachment
 from ._log import log_error
 from .recorder import RecorderCore, RecordOptions, prepare
 from .settings import CaptureLevel
@@ -19,7 +19,9 @@ Status = Literal["success", "failed"]
 class _Handle:
     """What both run handles share. Nothing here ever raises into the agent."""
 
-    def __init__(self, core: RecorderCore | None, attachment: Attachment | None, otel: bool, root: str) -> None:
+    def __init__(
+        self, core: RecorderCore | None, attachment: Attachment | ContextAttachment | None, otel: bool, root: str
+    ) -> None:
         self._core = core
         self._attachment = attachment
         self._otel = otel

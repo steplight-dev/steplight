@@ -82,10 +82,14 @@ function stepHtml(run: Run, step: Step, snapshots: Record<string, string>, budge
   const failed = step.error ? `<span class="badge failed">failed</span>` : "";
   const cause = step.causedBy ? run.steps.find((s) => s.id === step.causedBy) : undefined;
   const effects = run.steps.filter((s) => s.causedBy === step.id);
+  const decider = step.decidedBy ? run.steps.find((s) => s.id === step.decidedBy) : undefined;
+  const decisions = run.steps.filter((s) => s.decidedBy === step.id);
 
   const parts: string[] = [];
   parts.push(`<p class="muted">#${step.index} · ${esc(step.kind)} · ${new Date(step.timestamp).toISOString()}${step.url ? ` · <span class="mono">${esc(step.url)}</span>` : ""}</p>`);
   if (cause) parts.push(`<p class="link"><a href="#step-${cause.index}">↩ Caused by step #${cause.index} (${esc(cause.kind)}): ${esc(describeStep(cause))}</a></p>`);
+  if (decider) parts.push(`<p class="link"><a href="#step-${decider.index}">🧠 Decided in step #${decider.index}: ${esc(describeStep(decider))}</a></p>`);
+  for (const e of decisions) parts.push(`<p class="link"><a href="#step-${e.index}">↪ Chose step #${e.index} (${esc(e.kind)}): ${esc(describeStep(e))}</a></p>`);
   for (const e of effects) parts.push(`<p class="link"><a href="#step-${e.index}">↪ Led to step #${e.index} (${esc(e.kind)}): ${esc(describeStep(e))}</a></p>`);
   parts.push(failureHtml(step));
   parts.push(flagsHtml(step.flags));

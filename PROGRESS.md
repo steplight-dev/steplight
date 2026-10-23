@@ -7,7 +7,7 @@ Task list (updated as parts finish):
 - [x] A. Shared contract: `spec/run-format.schema.json`, `redaction-vectors.json` (562 cases), `never-capture.json`, `page-scan.js` (TS SDK uses the same file); `pnpm spec` regenerates, tests detect drift
 - [x] B. `steplight analyze` + auto-analysis in view/check/diff/report/export/tokens/check-action (hand-made unanalyzed fixture tests in core, cli, check-action)
 - [x] C. Python package (`python/`): recorder, redaction port (562/562 vectors), encryption (both directions with Node), policy, OTel; ruff + mypy --strict clean
-- [ ] D. Browser Use integration
+- [x] D. Browser Use integration (CDP attach + decision trace via decidedBy; browser-use 0.7-0.13 tested with a scripted LLM)
 - [~] E. 703 pytest tests incl. conformance (Python flags == TS flags, red-team scorecard identical), cross-language encryption, perf guard; Browser Use tests follow Part D
 - [ ] F. Tooling (uv, ruff, mypy), CI matrix, pip-audit, Dependabot, SBOM
 - [ ] G. Release pipeline (PyPI / TestPyPI trusted publishing; not tagged)

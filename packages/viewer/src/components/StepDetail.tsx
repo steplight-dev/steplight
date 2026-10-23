@@ -145,6 +145,8 @@ export function StepDetail(props: { run: Run; step: Step; onJump: (index: number
 
   const cause = step.causedBy ? run.steps.find((s) => s.id === step.causedBy) : undefined;
   const effects = run.steps.filter((s) => s.causedBy === step.id);
+  const decider = step.decidedBy ? run.steps.find((s) => s.id === step.decidedBy) : undefined;
+  const decisions = run.steps.filter((s) => s.decidedBy === step.id);
   const evidence = step.flags.filter((f) => f.type === "hidden_instruction").map((f) => f.evidence);
 
   return (
@@ -167,6 +169,24 @@ export function StepDetail(props: { run: Run; step: Step; onJump: (index: number
           ↩ Caused by step #{cause.index} ({cause.kind}): {describeStep(cause)}
         </button>
       )}
+      {decider && (
+        <button
+          data-testid="decided-by"
+          onClick={() => props.onJump(decider.index)}
+          className="mt-2 w-full rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-left text-sm text-violet-900 hover:bg-violet-100 dark:border-violet-700 dark:bg-violet-950/50 dark:text-violet-200"
+        >
+          🧠 Decided in step #{decider.index}: {describeStep(decider)}
+        </button>
+      )}
+      {decisions.map((e) => (
+        <button
+          key={e.id}
+          onClick={() => props.onJump(e.index)}
+          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-left text-sm hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+        >
+          ↪ Chose step #{e.index} ({e.kind}): {describeStep(e)}
+        </button>
+      ))}
       {effects.map((e) => (
         <button
           key={e.id}

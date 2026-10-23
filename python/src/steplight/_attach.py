@@ -59,7 +59,7 @@ class Attachment:
         self.page = page
         self.core = core
         self.listeners: list[tuple[str, Callable[..., None]]] = []
-        self.requests: dict[int, Any] = {}
+        self.on_activity: Callable[[Any], None] | None = None
 
     # -- handlers (all fail open) ------------------------------------------------------------
 
@@ -68,6 +68,8 @@ class Attachment:
             frame = source["frame"] if not hasattr(source, "frame") else source.frame
             if frame is not self.page.main_frame or not isinstance(event, dict):
                 return
+            if self.on_activity:
+                self.on_activity(self.page)
             if event.get("type") == "scan":
                 self.core.scan(event)
             else:
@@ -77,6 +79,8 @@ class Attachment:
 
     def _on_framenavigated(self, frame: Any) -> None:
         if frame is self.page.main_frame:
+            if self.on_activity:
+                self.on_activity(self.page)
             self.core.navigate(frame.url)
 
     def _on_request(self, request: Any) -> None:
@@ -103,7 +107,8 @@ class Attachment:
     def _on_crash(self, *_: Any) -> None:
         self.core.crashed()
 
-    def _listen(self) -> None:
+    def listen(self) -> None:
+        """Install the event listeners (the binding and the page script are installed separately)."""
         for event, handler in (
             ("framenavigated", self._on_framenavigated),
             ("request", self._on_request),
@@ -140,7 +145,7 @@ class Attachment:
             await self.page.expose_binding(BINDING_NAME, dispatcher)
             await self.page.add_init_script(script=page_script())
         dispatcher.current = self
-        self._listen()
+        self.listen()
         if self._initial_page():
             try:
                 await self.page.evaluate(page_script())
@@ -153,7 +158,7 @@ class Attachment:
             self.page.expose_binding(BINDING_NAME, dispatcher)
             self.page.add_init_script(script=page_script())
         dispatcher.current = self
-        self._listen()
+        self.listen()
         if self._initial_page():
             try:
                 self.page.evaluate(page_script())
@@ -170,3 +175,82 @@ class Attachment:
             except Exception:
                 pass
         self.listeners.clear()
+
+
+class ContextAttachment:
+    """Records every page of a browser context (used when the agent opens tabs, as Browser Use does).
+
+    The binding and the page script are installed once on the context; each page gets its own listeners, and
+    all of them feed one recorder. ``url()`` is the address of the page that was last active.
+    """
+
+    def __init__(self, context: Any, core: RecorderCore | None = None) -> None:
+        self.context = context
+        self.core = core
+        self.attachments: dict[Any, Attachment] = {}
+        self._active: Any = None
+
+    def url(self) -> str:
+        try:
+            return str(self._active.url) if self._active is not None else ""
+        except Exception:
+            return ""
+
+    def _activate(self, page: Any) -> None:
+        self._active = page
+
+    def _binding(self, source: Any, event: Any) -> None:
+        try:
+            page = source["page"] if not hasattr(source, "page") else source.page
+            attachment = self.attachments.get(page)
+            if attachment is not None:
+                attachment.binding(source, event)
+        except Exception as err:
+            log_error("event", err)
+
+    def _add_page(self, page: Any, evaluate: bool) -> None:
+        if self.core is None or page in self.attachments:
+            return
+        attachment = Attachment(page, self.core)
+        attachment.on_activity = self._activate
+        self.attachments[page] = attachment
+        attachment.listen()
+        if self._active is None:
+            self._active = page
+        if evaluate:
+            url = page.url
+            if url and url != "about:blank":
+                self.core.navigate(url)
+
+    def _on_page(self, page: Any) -> None:
+        try:
+            self._add_page(page, evaluate=False)
+        except Exception as err:
+            log_error("page", err)
+
+    async def attach_to(self, context: Any, core: RecorderCore) -> None:
+        """Start recording every page of ``context`` (existing and future) into ``core``."""
+        self.context = context
+        await self.attach(core)
+
+    async def attach(self, core: RecorderCore) -> None:
+        self.core = core
+        await self.context.expose_binding(BINDING_NAME, self._binding)
+        await self.context.add_init_script(script=page_script())
+        self.context.on("page", self._on_page)
+        for page in list(self.context.pages):
+            self._add_page(page, evaluate=True)
+            if page.url and page.url != "about:blank":
+                try:
+                    await page.evaluate(page_script())
+                except Exception as err:
+                    log_error("initial scan", err)
+
+    def detach(self) -> None:
+        for attachment in self.attachments.values():
+            attachment.detach()
+        self.attachments.clear()
+        try:
+            self.context.remove_listener("page", self._on_page)
+        except Exception:
+            pass
