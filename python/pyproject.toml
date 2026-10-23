@@ -1,0 +1,109 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "steplight"
+version = "0.2.0.dev0"
+description = "Record and replay what an AI browser agent does: Playwright and Browser Use runs in the Steplight run format, with prompt-injection and data-exfiltration flags."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Steplight contributors" }]
+keywords = ["ai-agents", "browser", "playwright", "browser-use", "prompt-injection", "observability", "tracing", "security"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+  "Topic :: Software Development :: Testing",
+  "Typing :: Typed",
+]
+# No required runtime dependencies: the recorder, the redaction engine and the run writer use the standard library only.
+dependencies = []
+
+[project.optional-dependencies]
+playwright = ["playwright>=1.40"]
+browser-use = ["playwright>=1.40", "browser-use>=0.5,<0.8; python_version >= '3.11'"]
+otel = ["opentelemetry-sdk>=1.25", "opentelemetry-exporter-otlp-proto-http>=1.25"]
+crypto = ["cryptography>=42"]
+
+[project.urls]
+Homepage = "https://github.com/steplight-dev/steplight"
+Documentation = "https://github.com/steplight-dev/steplight/blob/main/docs/python.md"
+Issues = "https://github.com/steplight-dev/steplight/issues"
+Changelog = "https://github.com/steplight-dev/steplight/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "jsonschema>=4.22",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "pip-audit>=2.7",
+  "playwright>=1.40",
+  "cryptography>=42",
+  "opentelemetry-sdk>=1.25",
+  "opentelemetry-exporter-otlp-proto-http>=1.25",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/steplight"]
+
+[tool.hatch.build.targets.sdist]
+# Only what the wheel needs plus the metadata: nothing from tests, caches or the rest of the monorepo.
+include = ["src/steplight", "LICENSE", "README.md", "pyproject.toml"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "PIE", "RET", "S", "PT", "ASYNC", "PL", "RUF"]
+ignore = [
+  "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", # complexity limits: the redaction engine mirrors the TypeScript one
+  "S101", # assert is fine in tests
+  "E501", # the formatter owns line length; long lines are docstrings and comments
+  "PT018", "PLR0917", "SIM105",
+  "S110", "S112", # "fail open": hooks deliberately swallow errors after logging them
+  "RUF001", "RUF002", "RUF003", # the engine and its tests handle Unicode look-alikes on purpose
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108", "S603", "S607", "PLC0415", "PLW0603", "B011", "ASYNC", "PT012", "SIM115", "PLR0124", "PLR1714", "PLE"]
+"src/steplight/integrations/**" = ["PLC0415"]
+"src/steplight/*.py" = ["PLC0415", "PLW0603"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+files = ["src"]
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["browser_use", "browser_use.*", "opentelemetry", "opentelemetry.*", "cryptography", "cryptography.*", "playwright", "playwright.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+  "browser: needs a Chromium installed by `playwright install chromium`",
+  "conformance: runs the built Node CLI (pnpm -r build) on runs recorded by Python",
+  "browser_use_live: needs a real model API key; skipped without one",
+]
+addopts = "-ra"
