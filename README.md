@@ -158,6 +158,24 @@ await run.end("success");                  // or "failed"
 
 Options: `dir` (default `$STEPLIGHT_DIR` or `.steplight/runs`), `otel` (export spans on `end()`; on by default only if `OTEL_EXPORTER_OTLP_ENDPOINT` is set), `meta`, `captureLevel` (`"minimal"`, `"standard"` (default) or `"full"`: what is written to disk; detectors always see everything first), `encryption` (`{ key }` or `{ passphrase }`; or set `STEPLIGHT_ENCRYPTION_KEY` / `STEPLIGHT_PASSPHRASE`). An organisation policy file / `steplight.config.json` / `STEPLIGHT_*` variables can cap the level and more (see [docs/enterprise.md](docs/enterprise.md)); if a policy cannot be honoured `record()` records nothing and your agent keeps running. For failures the SDK cannot see (for example `locator.click()`), call `await run.reportError(err, "#selector")`.
 
+## Python
+
+```bash
+pip install "steplight[playwright]"      # also: steplight[browser-use], [otel], [crypto]
+npm i -D steplight                       # the CLI that analyzes, views and checks runs
+```
+
+```python
+import steplight
+
+async with await steplight.record(page, task="Book the cheapest flight") as run:   # sync: steplight.recording_sync(...)
+    await page.goto("https://airline.example/flights")
+    run.note("Comparing fares")
+    await page.click("text=Select Economy")
+```
+
+The Python package records Playwright (async and sync) and [Browser Use](https://github.com/browser-use/browser-use) agents (0.7 – 0.13) into the same run format, with no required dependencies, no network calls and redaction before anything is written. Runs are analyzed by the Node CLI (`steplight analyze`, run automatically by `view`, `check`, `diff`, `report` and the GitHub Action), so the flags, replay, diff and CI checks are identical to the TypeScript SDK. Guide: [docs/python.md](docs/python.md); package README: [python/README.md](python/README.md); demo: [examples/python-demo/](examples/python-demo/README.md). Shared contract (run-format schema, redaction vectors, never-capture rules): [spec/](spec).
+
 ## Features
 
 ### Stuck loops and the failure explainer

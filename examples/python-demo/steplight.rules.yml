@@ -1,0 +1,3 @@
+max_steps: 20
+max_severity: medium   # fail on high / critical flags
+no_stuck_loops: true

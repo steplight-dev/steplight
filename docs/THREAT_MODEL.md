@@ -96,6 +96,20 @@ IDs are referenced from tests and from `DECISIONS.md`.
 | T21 | Shared file read by the wrong person | Optional password protection (PBKDF2-SHA256, 600k iterations → AES-256-GCM) for JSON and HTML; the HTML variant is a small decrypt page (no network, CSP, sandboxed frame); organisation policy can require it | `core/src/crypto.ts`, `exportPackage.ts` | unit + browser tests: no plaintext in the file, wrong password refused |
 | T22 | A **malicious run file** imported into the viewer | `parseBundle` validates and re-sanitises untrusted input, caps size; the server import path applies the same; rendering is text-only (T1) | `core/src/bundle.ts` | bundle tests |
 
+### Python SDK
+
+The Python package (`python/`) is a second recorder in the same trust model: it runs inside the agent's own process, reads the page through Playwright (or Browser Use's browser over CDP), redacts, and writes the run folder. It has no required dependencies and no network code. Analysis is done afterwards by the Node CLI (`steplight analyze`), which treats the run folder as untrusted input (T22).
+
+| ID | Threat | Mitigation | Where | Evidence |
+|---|---|---|---|---|
+| T27 | A hostile page abuses the Python recorder (floods, giant strings, regex-bombs the redactor) | Page-supplied data is size-capped (node count, text length, body previews) and network and WebSocket steps are capped per run; one daemon writer thread; the redaction port is linear-time (card detection uses digit runs and prefix sums); the page cannot supply redaction patterns | `python/src/steplight/recorder.py`, `redact.py` | `test_misc.py` perf guard on 1 MB hostile inputs |
+| T28 | Python redaction diverges from the TypeScript engine and leaks | The 562 vectors in `spec/redaction-vectors.json` are generated from the TS engine; Python must match them exactly; freshness is checked in CI; redaction failure drops the data | `spec/`, `python/tests/test_redact_vectors.py` | 562 vectors pass |
+| T29 | Recorded input is analyzed with unredacted data | The material for analysis is redacted before it is written and removed by `steplight analyze`; only an explicit `analyzed=false` marks a run as pending | `core/src/storage/analyzeStore.ts` | `analyzeStore.test.ts`, `python/tests/test_conformance.py` |
+| T30 | The recorder breaks or slows the agent | Every hook is wrapped and logs to stderr; the hooks never raise; policy that cannot be honoured means "record nothing" | `python/src/steplight/_attach.py` (`_safe`), `handles.py` | `test_recorder.py` fail-open tests |
+| T31 | Browser Use steps expose typed secrets | Typed text parameters are replaced by `<N chars>`; model output is redacted like page text | `integrations/browser_use.py` | `test_browser_use.py` |
+| T32 | Encrypted runs are unreadable or weaker across languages | Same AES-256-GCM envelope, AAD and scrypt parameters as the CLI, tested in both directions | `python/src/steplight/crypto.py` | `test_crosslang.py` |
+| T33 | Compromised PyPI release | PyPI Trusted Publishing (OIDC) with attestations, no token; tag, npm and PEP 440 versions must agree; sdist and wheel content gate; `uv.lock`, `pip-audit`, SBOM, Dependabot with cooldown | `release.yml`, `python/scripts/` | `supplychain.test.ts`, `test_release_scripts.py` |
+
 ### Supply chain
 
 | ID | Threat | Mitigation | Where | Evidence |
@@ -121,6 +135,8 @@ IDs are referenced from tests and from `DECISIONS.md`.
 - **The CLI viewer's token is in the link** printed to the terminal; anyone who can read your terminal history or screen
   can use it until the CLI exits. The viewer removes it from the address bar after loading.
 - **Single recorded tab for network capture**; page events follow the agent across tabs.
+- **Python runs are unanalyzed until the Node CLI sees them.** The Python package does not run the detectors; a run that was never analyzed has no flags (the CLI analyzes it automatically before `view`, `check`, `diff`, `report` and export).
+- **`pip-audit` findings in Browser Use's own pinned dependencies** (0.13.x) are reported, not blocking, for that extra; the core package and the other extras must be clean.
 
 ## 6. Reviewing this model
 

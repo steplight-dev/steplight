@@ -2,6 +2,25 @@
 
 All notable changes to Steplight. The npm packages (`steplight`, `@steplight/core`, `@steplight/sdk`, `@steplight/cli`, `@steplight/redteam`) share one version number. The GitHub Action ([steplight-dev/steplight-check-action](https://github.com/steplight-dev/steplight-check-action)) is versioned separately.
 
+## Unreleased (0.2.0)
+
+### Python SDK
+- **New `steplight` package for Python 3.10 – 3.13** (`pip install "steplight[playwright]"`): records Playwright (async and sync) and [Browser Use](https://github.com/browser-use/browser-use) (0.7 – 0.13) runs into the same run format, so `view`, `diff`, `check`, `report`, `export` and the GitHub Action work on them unchanged. No required dependencies, no network calls, redaction before anything is written (a faithful port of the TypeScript engine), fail open for the agent and fail closed for privacy. Extras: `playwright`, `browser-use`, `otel`, `crypto`. Guide: [docs/python.md](docs/python.md).
+- **Browser Use decision trace:** each model step is an `agent_note`, and the browser steps it chose carry `decidedBy`; the viewer and HTML report show "decided by" links.
+- **Encryption compatible with the CLI** (AES-256-GCM, scrypt), tested in both directions; OpenTelemetry spans with the same names and attributes as the TypeScript SDK; `0600`/`0700` permissions.
+
+### CLI and core
+- **`steplight analyze <runId|--all>`** runs the detectors over a run recorded without them (Python runs), and `view`, `check`, `diff`, `report`, `export`, `tokens` and the GitHub Action do it automatically for unanalyzed runs.
+- **Shared contract in [spec/](spec):** a run-format JSON Schema with `formatVersion`, 562 redaction vectors generated from the TypeScript engine, never-capture rules as data, and one standalone `page-scan.js` used by both SDKs (`pnpm spec` regenerates, CI checks freshness).
+
+### Supply chain and release
+- **PyPI Trusted Publishing** (OIDC, attestations, no token) from the same tag-triggered workflow; pre-release tags go to TestPyPI. A release is refused unless the tag, the npm versions and the PEP 440 Python version agree and the sdist and wheel contain only what they should.
+- Python CI matrix (3.10 – 3.13 on Ubuntu and Windows), ruff, `mypy --strict`, `pip-audit`, a Python CycloneDX SBOM and Dependabot for `uv` with the same cooldown as npm.
+
+### Known gaps
+- The Python package does not run the detectors itself (the Node CLI analyzes its runs) and does not diagnose failures yet.
+- `pip-audit` finds known vulnerabilities in packages pinned by Browser Use 0.13; the check warns for that extra only.
+
 ## 0.1.0 - 2026-10-09
 
 First public release. Steplight is a flight recorder for AI agents that drive a browser: it records what the agent does, replays it, and flags prompt injection and data exfiltration. Everything runs on your machine.

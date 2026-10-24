@@ -11,7 +11,7 @@ Task list (updated as parts finish):
 - [~] E. 703 pytest tests incl. conformance (Python flags == TS flags, red-team scorecard identical), cross-language encryption, perf guard; Browser Use tests follow Part D
 - [x] F. Tooling (uv, ruff, mypy --strict), CI matrix 3.10-3.13 x ubuntu/windows, pip-audit, Dependabot (uv), Python SBOM
 - [x] G. Release pipeline (PyPI / TestPyPI trusted publishing, content + version gates; environments created; NOT tagged)
-- [ ] H. Docs
+- [x] H. Docs (python/README.md, docs/python.md, README section, examples/python-demo, THREAT_MODEL T27-T33, CHANGELOG, releasing.md)
 
 ## npm: 0.1.0 (final)
 
