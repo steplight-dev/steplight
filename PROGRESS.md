@@ -9,8 +9,8 @@ Task list (updated as parts finish):
 - [x] C. Python package (`python/`): recorder, redaction port (562/562 vectors), encryption (both directions with Node), policy, OTel; ruff + mypy --strict clean
 - [x] D. Browser Use integration (CDP attach + decision trace via decidedBy; browser-use 0.7-0.13 tested with a scripted LLM)
 - [~] E. 703 pytest tests incl. conformance (Python flags == TS flags, red-team scorecard identical), cross-language encryption, perf guard; Browser Use tests follow Part D
-- [ ] F. Tooling (uv, ruff, mypy), CI matrix, pip-audit, Dependabot, SBOM
-- [ ] G. Release pipeline (PyPI / TestPyPI trusted publishing; not tagged)
+- [x] F. Tooling (uv, ruff, mypy --strict), CI matrix 3.10-3.13 x ubuntu/windows, pip-audit, Dependabot (uv), Python SBOM
+- [x] G. Release pipeline (PyPI / TestPyPI trusted publishing, content + version gates; environments created; NOT tagged)
 - [ ] H. Docs
 
 ## npm: 0.1.0 (final)

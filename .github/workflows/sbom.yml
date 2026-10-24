@@ -31,3 +31,23 @@ jobs:
           name: sbom-cyclonedx
           path: sbom.cdx.json
           if-no-files-found: error
+
+  sbom-python:
+    name: CycloneDX SBOM (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12"
+      # uv writes CycloneDX 1.5 straight from python/uv.lock: the package, every extra and the dev tools.
+      - run: uv export --frozen --all-extras --format cyclonedx1.5 -o ../sbom-python.cdx.json
+        working-directory: python
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-python-cyclonedx
+          path: sbom-python.cdx.json
+          if-no-files-found: error

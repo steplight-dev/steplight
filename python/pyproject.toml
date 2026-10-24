@@ -63,7 +63,7 @@ packages = ["src/steplight"]
 
 [tool.hatch.build.targets.sdist]
 # Only what the wheel needs plus the metadata: nothing from tests, caches or the rest of the monorepo.
-include = ["src/steplight", "LICENSE", "README.md", "pyproject.toml"]
+only-include = ["src/steplight", "LICENSE", "README.md", "pyproject.toml"]
 
 [tool.ruff]
 line-length = 120

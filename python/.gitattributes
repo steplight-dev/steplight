@@ -1,0 +1,2 @@
+# Python sources and the generated spec files use LF everywhere.
+*.py text eol=lf

@@ -1,6 +1,7 @@
 name: Release
 
-# Publishes the five npm packages (@steplight/core, redteam, sdk, cli and the unscoped steplight) when a version tag is pushed (for example v0.1.0 or v0.1.0-rc.1).
+# Publishes the five npm packages (@steplight/core, redteam, sdk, cli and the unscoped steplight) and then the Python
+# package `steplight` when a version tag is pushed (for example v0.2.0 or v0.2.0-rc.1).
 #
 # There is no npm token anywhere: npm "trusted publishing" lets this workflow publish through its
 # GitHub OIDC identity (configured per package on npmjs.com: repository steplight-dev/steplight,
@@ -8,9 +9,16 @@ name: Release
 # statement. A tag with a pre-release part (it contains "-") is published under the `next` dist-tag,
 # so `latest` only ever moves for a final release.
 #
-# Two jobs, so the one with the OIDC permission never runs repository code:
-#   verify   lint, build, test, pack the tarballs      (contents: read)
-#   publish  npm publish of exactly those tarballs     (contents: read, id-token: write)
+# The jobs with the OIDC permission never run repository code:
+#   verify          lint, build, test, pack the npm tarballs                 (contents: read)
+#   python-build    check the version, build sdist + wheel with uv, verify
+#                   that they hold nothing but the package                   (contents: read)
+#   publish         npm publish of exactly those tarballs                    (contents: read, id-token: write)
+#   publish-pypi    final tags:      PyPI via Trusted Publishing + attestations, environment pypi-release
+#   publish-testpypi  pre-release tags (with a "-"): TestPyPI, environment testpypi-release
+# Python publishing waits for the npm jobs, but its build and checks run first, so a bad Python package stops the
+# release before anything is published. There is no PyPI token anywhere either (PyPI "trusted publisher": repository
+# steplight-dev/steplight, workflow release.yml, the environment named above).
 on:
   push:
     tags: ["v*"]
@@ -62,9 +70,48 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  python-build:
+    name: Build and verify the Python package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12"
+      - name: The tag must equal the version of the Python package (PEP 440 form, v0.2.0-rc.1 is 0.2.0rc1)
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python3 python/scripts/check_version.py "$TAG"
+      - name: The lock file must be current
+        working-directory: python
+        run: uv lock --check
+      - name: Build the sdist and the wheel
+        working-directory: python
+        run: uv build --out-dir dist
+      - name: Fail on anything but the package, py.typed, page-scan.js, LICENSE, README and metadata
+        working-directory: python
+        run: python3 scripts/verify_dist.py dist/
+      - name: The wheel installs and imports in a clean environment, with no dependencies
+        working-directory: python
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          uv venv "$RUNNER_TEMP/smoke"
+          uv pip install --python "$RUNNER_TEMP/smoke" --no-deps dist/*.whl
+          "$RUNNER_TEMP/smoke/bin/python" -c "import steplight, sys; print(steplight.__version__)"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: python-dist
+          path: python/dist/*
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
     name: Publish to npm (OIDC, provenance)
-    needs: verify
+    needs: [verify, python-build]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: npm-release # only tags matching v* may deploy here
@@ -92,3 +139,44 @@ jobs:
           for file in steplight-core steplight-redteam steplight-sdk steplight-cli steplight; do
             npm publish "./tarballs/$file-${TAG#v}.tgz" --provenance --access public --tag "$dist_tag"
           done
+
+  publish-pypi:
+    name: Publish to PyPI (Trusted Publishing, attestations)
+    if: ${{ !contains(github.ref_name, '-') }}
+    needs: [publish, python-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi-release # only tags matching v* may deploy here
+    permissions:
+      contents: read
+      id-token: write # lets PyPI exchange the GitHub OIDC token for a short-lived upload token and receive the attestations
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/
+          attestations: true
+
+  publish-testpypi:
+    name: Publish the pre-release to TestPyPI (Trusted Publishing, attestations)
+    if: ${{ contains(github.ref_name, '-') }}
+    needs: [publish, python-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: testpypi-release # only tags matching v* may deploy here
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/
+          attestations: true

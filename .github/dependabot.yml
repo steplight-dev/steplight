@@ -50,6 +50,31 @@ updates:
         update-types: [minor, patch]
     commit-message:
       prefix: "deps"
+  - package-ecosystem: uv
+    directory: /python
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # The same cooldown as npm: patch 4 days, minor and major 7. Security updates ignore cooldown.
+    cooldown:
+      default-days: 4
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 4
+    # Browser Use is pinned to the range the integration is tested against (python/pyproject.toml); a new
+    # minor series is adopted by hand, after running the Browser Use tests against it.
+    ignore:
+      - dependency-name: browser-use
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    groups:
+      python-dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+      python-production:
+        dependency-type: production
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps(python)"
   - package-ecosystem: github-actions
     directory: /
     schedule:
