@@ -1,6 +1,6 @@
 {
   "name": "@steplight/extension",
-  "version": "0.1.0",
+  "version": "0.2.0-rc.1",
   "private": true,
   "description": "Steplight Chrome MV3 recorder.",
   "license": "Apache-2.0",

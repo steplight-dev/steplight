@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Steplight",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Record and flag every step an AI agent takes in your browser. Data stays on localhost.",
   "minimum_chrome_version": "110",
   "action": {

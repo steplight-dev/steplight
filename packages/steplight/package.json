@@ -1,6 +1,6 @@
 {
   "name": "steplight",
-  "version": "0.1.0",
+  "version": "0.2.0-rc.1",
   "description": "Flight recorder for AI agents that drive a browser: record, replay, and flag prompt injection and data exfiltration. SDK and CLI in one install.",
   "license": "Apache-2.0",
   "type": "module",
