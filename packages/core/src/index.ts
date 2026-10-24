@@ -1,5 +1,5 @@
 /** Steplight core package version. */
-export const VERSION = "0.2.0-rc.1";
+export const VERSION = "0.2.0";
 
 export * from "./types.js";
 export * from "./severity.js";

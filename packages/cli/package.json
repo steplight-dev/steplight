@@ -1,6 +1,6 @@
 {
   "name": "@steplight/cli",
-  "version": "0.2.0-rc.1",
+  "version": "0.2.0",
   "description": "Steplight CLI: view and export recorded agent runs.",
   "license": "Apache-2.0",
   "type": "module",

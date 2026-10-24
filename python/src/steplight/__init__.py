@@ -11,7 +11,7 @@ redacted before it is written; nothing leaves the machine.
 
 from __future__ import annotations
 
-__version__ = "0.2.0rc1"
+__version__ = "0.2.0"
 
 from .analyze import analyze
 from .crypto import EncryptedRunError, EncryptionOptions

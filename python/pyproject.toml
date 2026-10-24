@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "steplight-sdk"
-version = "0.2.0rc1"
+version = "0.2.0"
 description = "Record and replay what an AI browser agent does: Playwright and Browser Use runs in the Steplight run format, with prompt-injection and data-exfiltration flags."
 readme = "README.md"
 license = "Apache-2.0"
