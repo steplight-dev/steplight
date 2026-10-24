@@ -9,7 +9,7 @@ moved to another run or renamed fails to decrypt. An envelope is the one-line co
 Keys: a 32-byte ``key`` (64 hex characters or base64), or a ``passphrase`` stretched with scrypt (N=32768, r=8,
 p=1, 16-byte random salt kept in ``<runs>/.steplight-enc.json`` next to an encrypted check value, so a wrong
 passphrase is reported clearly). ``$STEPLIGHT_ENCRYPTION_KEY`` / ``$STEPLIGHT_PASSPHRASE`` are used when nothing
-is given. AES-GCM needs the ``cryptography`` package (``pip install steplight[crypto]``).
+is given. AES-GCM needs the ``cryptography`` package (``pip install steplight-sdk[crypto]``).
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def _aesgcm(key: bytes) -> Any:
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     except ImportError as err:  # pragma: no cover - exercised only without the extra
         raise RuntimeError(
-            "Encryption at rest needs the 'cryptography' package: pip install 'steplight[crypto]'"
+            "Encryption at rest needs the 'cryptography' package: pip install 'steplight-sdk[crypto]'"
         ) from err
     return AESGCM(key)
 

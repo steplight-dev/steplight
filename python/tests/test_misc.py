@@ -176,3 +176,37 @@ def test_the_package_makes_no_network_calls_of_its_own() -> None:
     for path in (PYTHON_DIR / "src" / "steplight").rglob("*.py"):
         hits = forbidden.findall(path.read_text(encoding="utf-8"))
         assert not hits, f"{path.name}: {hits}"
+
+
+# ------------------------------------------------------------------ the PyPI name
+
+WRONG_INSTALL = re.compile(r"pip\s+install\s+(?:-\S+\s+)*[\"']?steplight(?!-sdk)(?![\w-])", re.IGNORECASE)
+WRONG_EXTRA = re.compile(r"(?<![\w-])steplight\[")
+
+
+def test_the_pypi_distribution_is_steplight_sdk_and_the_docs_say_so() -> None:
+    meta = tomllib.loads((PYTHON_DIR / "pyproject.toml").read_text(encoding="utf-8"))
+    assert meta["project"]["name"] == "steplight-sdk"  # `steplight` on PyPI is an unrelated project
+    files = [
+        *REPO.glob("*.md"),
+        *(REPO / "docs").rglob("*.md"),
+        *(REPO / "examples").rglob("*.md"),
+        *(REPO / "examples").rglob("*.py"),
+        *PYTHON_DIR.glob("*.md"),
+        *(PYTHON_DIR / "src").rglob("*.py"),
+        *(PYTHON_DIR / "tests").glob("*.py"),
+        *(REPO / ".github").rglob("*.yml"),
+    ]
+    assert len(files) > 10
+    bad = []
+    for path in files:
+        if path.name == "test_misc.py":
+            continue
+        text = path.read_text(encoding="utf-8")
+        bad += [
+            f"{path.relative_to(REPO)}: {m.group(0)!r}"
+            for m in (*WRONG_INSTALL.finditer(text), *WRONG_EXTRA.finditer(text))
+        ]
+    assert not bad, f"use `pip install steplight-sdk` (the import name stays `steplight`): {bad}"
+    for readme in (PYTHON_DIR / "README.md", REPO / "README.md", REPO / "docs" / "python.md"):
+        assert "Not related to the PyPI package `steplight`" in readme.read_text(encoding="utf-8"), readme.name

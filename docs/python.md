@@ -1,6 +1,6 @@
 # Steplight for Python
 
-The `steplight` Python package records Playwright (async and sync) and [Browser Use](https://github.com/browser-use/browser-use) runs into the same run format as the TypeScript SDK and the Chrome extension. Everything downstream is unchanged: `steplight view`, `diff`, `check`, `report`, `export` and the GitHub Action read the Python runs like any other.
+The `steplight-sdk` Python package (import name `steplight`) records Playwright (async and sync) and [Browser Use](https://github.com/browser-use/browser-use) runs into the same run format as the TypeScript SDK and the Chrome extension. Everything downstream is unchanged: `steplight view`, `diff`, `check`, `report`, `export` and the GitHub Action read the Python runs like any other.
 
 Package README with the three examples: [python/README.md](../python/README.md). Runnable demo: [examples/python-demo/](../examples/python-demo/README.md).
 
@@ -15,6 +15,8 @@ Package README with the three examples: [python/README.md](../python/README.md).
 - The **Python package** has no required dependencies and makes no network calls. It captures, redacts, applies policy, optionally encrypts and writes the run folder.
 - The **detectors** (hidden instructions, data leaving the page, loops) run in the Node CLI so there is one implementation. The Python recorder writes the run with `meta.analyzed = false` and the redacted material the detectors need; `steplight analyze <runId>` (or `--all`) adds the flags and removes that material. `view`, `check`, `diff`, `report`, `export`, `tokens` and the GitHub Action run it automatically, so you rarely call it yourself. From Python: `steplight.analyze(".steplight/runs", run_id)`.
 - The run format is a versioned contract in [spec/](../spec): a JSON Schema, 562 redaction test vectors generated from the TypeScript engine (the Python port passes all of them), the never-capture rules, and the single in-page scan script both SDKs inject.
+
+> Not related to the PyPI package `steplight`; if you have it installed, both use the `steplight` import name.
 
 Install the CLI next to your Python project: `npm i -D steplight` (needs Node 20+). Without it the recording still works; you just cannot analyze, view or check.
 
@@ -51,8 +53,8 @@ async with steplight_bu.recording(agent) as run:
 
 See the table in [python/README.md](../python/README.md#options). Capture levels, encryption, OpenTelemetry and policy behave as in the [Node SDK](../README.md#sdk-playwright) and [enterprise guide](enterprise.md). Specifics:
 
-- **Encryption** needs `pip install "steplight[crypto]"`. The envelope format is identical to the Node CLI's (AES-256-GCM, AAD `<runId>/<file>`, scrypt N=32768 r=8 p=1 for passphrases, salt in `.steplight-enc.json`), tested in both directions. The CLI reads Python runs with `STEPLIGHT_ENCRYPTION_KEY` or `STEPLIGHT_PASSPHRASE`.
-- **OpenTelemetry** needs `steplight[otel]`. Spans use the same names and attributes as the TypeScript SDK (`steplight.run`, `steplight.step.<kind>`, `steplight.flag`…). Because the flags come from the CLI, the spans Python exports at `end()` carry no flags; to export spans with flags, analyze first and export with the CLI: `steplight export <runId> --otlp`.
+- **Encryption** needs `pip install "steplight-sdk[crypto]"`. The envelope format is identical to the Node CLI's (AES-256-GCM, AAD `<runId>/<file>`, scrypt N=32768 r=8 p=1 for passphrases, salt in `.steplight-enc.json`), tested in both directions. The CLI reads Python runs with `STEPLIGHT_ENCRYPTION_KEY` or `STEPLIGHT_PASSPHRASE`.
+- **OpenTelemetry** needs `steplight-sdk[otel]`. Spans use the same names and attributes as the TypeScript SDK (`steplight.run`, `steplight.step.<kind>`, `steplight.flag`…). Because the flags come from the CLI, the spans Python exports at `end()` carry no flags; to export spans with flags, analyze first and export with the CLI: `steplight export <runId> --otlp`.
 - **Files:** the runs folder is created `0700` and files `0600` on POSIX. On Windows they inherit the folder ACL.
 
 ## CI: fail the build when a Python agent misbehaves
@@ -72,7 +74,7 @@ jobs:
         with: { python-version: "3.12" }
       - uses: actions/setup-node@<full-commit-sha>
         with: { node-version: "22" }
-      - run: pip install "steplight[playwright]" && playwright install --with-deps chromium
+      - run: pip install "steplight-sdk[playwright]" && playwright install --with-deps chromium
       - run: npm i -D steplight
       - run: python run_agent.py                           # your agent, recording with steplight.record(...)
       - run: npx steplight check --latest --rules steplight.rules.yml --format sarif --out steplight.sarif

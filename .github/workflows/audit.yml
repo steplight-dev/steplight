@@ -41,7 +41,7 @@ jobs:
       - name: Export the locked runtime tree of the package and its extras (without Browser Use)
         working-directory: python
         run: uv export --frozen --no-dev --extra playwright --extra crypto --extra otel --no-emit-project --no-hashes -o ../audit-core.txt
-      # Fails on any known vulnerability in what `pip install steplight[playwright,crypto,otel]` brings in.
+      # Fails on any known vulnerability in what `pip install steplight-sdk[playwright,crypto,otel]` brings in.
       - name: Audit (fails on any finding)
         working-directory: python
         run: uv run --frozen pip-audit -r ../audit-core.txt --no-deps --disable-pip --strict

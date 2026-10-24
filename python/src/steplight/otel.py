@@ -1,7 +1,7 @@
 """Optional OpenTelemetry export of a run, with the same span names and attributes as the TypeScript SDK.
 
 A root ``steplight.run`` span, one child ``steplight.step.<kind>`` span per step and one ``steplight.flag`` event per
-flag. Needs ``pip install steplight[otel]``. The only network traffic is to the OTLP endpoint the user configures
+flag. Needs ``pip install steplight-sdk[otel]``. The only network traffic is to the OTLP endpoint the user configures
 (``OTEL_EXPORTER_OTLP_ENDPOINT`` or ``endpoint=``). Flags exist only once the run has been analyzed; spans exported
 at ``end()`` carry ``steplight.flag.count = 0`` (export again after ``steplight analyze`` with
 ``steplight export <runId> --otlp``).

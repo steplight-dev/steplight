@@ -1,6 +1,6 @@
 """Record a Playwright run of a page with a hidden instruction, then let the Steplight CLI flag it.
 
-    pip install "steplight[playwright]" && playwright install chromium
+    pip install "steplight-sdk[playwright]" && playwright install chromium
     npm i -D steplight            # the CLI that analyzes, views and checks the run
     python demo.py && npx steplight check --latest --rules steplight.rules.yml
 

@@ -5,7 +5,7 @@ All notable changes to Steplight. The npm packages (`steplight`, `@steplight/cor
 ## Unreleased (0.2.0)
 
 ### Python SDK
-- **New `steplight` package for Python 3.10 – 3.13** (`pip install "steplight[playwright]"`): records Playwright (async and sync) and [Browser Use](https://github.com/browser-use/browser-use) (0.7 – 0.13) runs into the same run format, so `view`, `diff`, `check`, `report`, `export` and the GitHub Action work on them unchanged. No required dependencies, no network calls, redaction before anything is written (a faithful port of the TypeScript engine), fail open for the agent and fail closed for privacy. Extras: `playwright`, `browser-use`, `otel`, `crypto`. Guide: [docs/python.md](docs/python.md).
+- **New Python package `steplight-sdk` (import name `steplight`) for Python 3.10 – 3.13** (`pip install "steplight-sdk[playwright]"`): records Playwright (async and sync) and [Browser Use](https://github.com/browser-use/browser-use) (0.7 – 0.13) runs into the same run format, so `view`, `diff`, `check`, `report`, `export` and the GitHub Action work on them unchanged. No required dependencies, no network calls, redaction before anything is written (a faithful port of the TypeScript engine), fail open for the agent and fail closed for privacy. Extras: `playwright`, `browser-use`, `otel`, `crypto`. Guide: [docs/python.md](docs/python.md).
 - **Browser Use decision trace:** each model step is an `agent_note`, and the browser steps it chose carry `decidedBy`; the viewer and HTML report show "decided by" links.
 - **Encryption compatible with the CLI** (AES-256-GCM, scrypt), tested in both directions; OpenTelemetry spans with the same names and attributes as the TypeScript SDK; `0600`/`0700` permissions.
 

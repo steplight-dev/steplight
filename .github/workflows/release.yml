@@ -14,6 +14,7 @@ name: Release
 #   python-build    check the version, build sdist + wheel with uv, verify
 #                   that they hold nothing but the package                   (contents: read)
 #   publish         npm publish of exactly those tarballs                    (contents: read, id-token: write)
+#   (PyPI project name: steplight-sdk; the import name is steplight)
 #   publish-pypi    final tags:      PyPI via Trusted Publishing + attestations, environment pypi-release
 #   publish-testpypi  pre-release tags (with a "-"): TestPyPI, environment testpypi-release
 # Python publishing waits for the npm jobs, but its build and checks run first, so a bad Python package stops the

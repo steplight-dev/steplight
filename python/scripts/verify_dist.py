@@ -88,8 +88,8 @@ def metadata_problems(name: str, metadata: str) -> list[str]:
             problems.append(
                 f"{name}: required dependency {line.removeprefix('Requires-Dist:').strip()} (the package has none)"
             )
-    if not re.search(r"^Name: steplight\s*$", metadata, re.MULTILINE):
-        problems.append(f"{name}: metadata Name is not steplight")
+    if not re.search(r"^Name: steplight-sdk\s*$", metadata, re.MULTILINE):
+        problems.append(f"{name}: metadata Name is not steplight-sdk")
     if not re.search(r"^Requires-Python: >=3\.10\s*$", metadata, re.MULTILINE):
         problems.append(f"{name}: metadata Requires-Python is not >=3.10")
     if not re.search(r"^License-Expression: Apache-2\.0\s*$", metadata, re.MULTILINE):

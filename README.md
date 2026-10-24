@@ -160,8 +160,10 @@ Options: `dir` (default `$STEPLIGHT_DIR` or `.steplight/runs`), `otel` (export s
 
 ## Python
 
+> Not related to the PyPI package `steplight`; if you have it installed, both use the `steplight` import name.
+
 ```bash
-pip install "steplight[playwright]"      # also: steplight[browser-use], [otel], [crypto]
+pip install "steplight-sdk[playwright]"      # also: steplight-sdk[browser-use], [otel], [crypto]
 npm i -D steplight                       # the CLI that analyzes, views and checks runs
 ```
 

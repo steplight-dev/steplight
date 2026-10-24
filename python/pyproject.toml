@@ -3,7 +3,7 @@ requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "steplight"
+name = "steplight-sdk"
 version = "0.2.0.dev0"
 description = "Record and replay what an AI browser agent does: Playwright and Browser Use runs in the Steplight run format, with prompt-injection and data-exfiltration flags."
 readme = "README.md"

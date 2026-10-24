@@ -3,7 +3,7 @@
 Records a Playwright run of a local page that hides a prompt injection, then analyzes it with the Steplight CLI.
 
 ```bash
-pip install "steplight[playwright]"
+pip install "steplight-sdk[playwright]"
 playwright install chromium
 npm i -D steplight                 # the CLI (analyze, view, check, diff, report)
 

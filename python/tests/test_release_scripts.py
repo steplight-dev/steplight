@@ -47,7 +47,9 @@ def test_other_tags_are_refused(tag: str) -> None:
 
 def test_the_gate_compares_pyproject_and_the_package(tmp_path: Path) -> None:
     (tmp_path / "src" / "steplight").mkdir(parents=True)
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "steplight"\nversion = "0.2.0rc1"\n', encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "steplight-sdk"\nversion = "0.2.0rc1"\n', encoding="utf-8"
+    )
     (tmp_path / "src" / "steplight" / "__init__.py").write_text('__version__ = "0.2.0rc1"\n', encoding="utf-8")
     assert check_version.check("v0.2.0-rc.1", tmp_path) == []
     assert any(
@@ -62,7 +64,7 @@ def test_the_gate_compares_pyproject_and_the_package(tmp_path: Path) -> None:
 def make_dist(folder: Path, extra: str | None = None, requires: str | None = None) -> Path:
     """A minimal valid wheel + sdist pair, optionally with one stray file or one required dependency."""
     folder.mkdir(parents=True, exist_ok=True)
-    metadata = "Name: steplight\nVersion: 0.2.0\nRequires-Python: >=3.10\nLicense-Expression: Apache-2.0\n"
+    metadata = "Name: steplight-sdk\nVersion: 0.2.0\nRequires-Python: >=3.10\nLicense-Expression: Apache-2.0\n"
     if requires:
         metadata += f"Requires-Dist: {requires}\n"
     package = dict.fromkeys(verify_dist.REQUIRED_PACKAGE_FILES, "x")

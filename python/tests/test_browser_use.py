@@ -21,7 +21,7 @@ from tests.conftest import all_text, needs_cli, run_cli
 pytestmark = [pytest.mark.browser]
 
 browser_use = pytest.importorskip(
-    "browser_use", reason="browser-use is not installed (pip install 'steplight[browser-use]')"
+    "browser_use", reason="browser-use is not installed (pip install 'steplight-sdk[browser-use]')"
 )
 if sys.version_info < (3, 11):  # pragma: no cover
     pytest.skip("browser-use needs Python 3.11", allow_module_level=True)

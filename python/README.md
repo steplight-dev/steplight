@@ -1,4 +1,6 @@
-# steplight (Python)
+# steplight-sdk (Python)
+
+> Not related to the PyPI package `steplight`; if you have it installed, both use the `steplight` import name.
 
 A flight recorder for AI agents that drive a browser. This package records **Playwright** (async and sync) and **Browser Use** runs into the Steplight run format, so the `steplight` CLI (view, replay, diff, check, report) and the GitHub Action work on them unchanged. Everything is redacted before it is written and nothing leaves your machine: no telemetry, no accounts, no network calls of its own.
 
@@ -7,7 +9,7 @@ A flight recorder for AI agents that drive a browser. This package records **Pla
 - **Fails open for your agent:** a recorder error goes to stderr and the agent keeps running. **Fails closed for privacy:** if redaction fails, the data is dropped.
 
 ```bash
-pip install "steplight[playwright]"        # or steplight[browser-use], steplight[otel], steplight[crypto]
+pip install "steplight-sdk[playwright]"        # or steplight-sdk[browser-use], steplight-sdk[otel], steplight-sdk[crypto]
 npm i -D steplight                         # the CLI that flags, views and checks the runs
 ```
 
@@ -85,8 +87,8 @@ npx steplight diff <runA> <runB>                            # first point of div
 |---|---|
 | `dir` | Runs folder (default `$STEPLIGHT_DIR` or `.steplight/runs`). Created `0700`, files `0600` on POSIX. |
 | `capture_level` | `"minimal"`, `"standard"` (default) or `"full"`: what is written to disk. Detectors always see everything first. |
-| `encrypt`, `encryption_key`, `passphrase` | AES-256-GCM at rest (needs `steplight[crypto]`). Byte-compatible with the Node CLI, which reads these runs given the same key or passphrase (`STEPLIGHT_ENCRYPTION_KEY` / `STEPLIGHT_PASSPHRASE`). |
-| `otel` | Export OpenTelemetry spans on `end()` (needs `steplight[otel]`); on by default only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set. |
+| `encrypt`, `encryption_key`, `passphrase` | AES-256-GCM at rest (needs `steplight-sdk[crypto]`). Byte-compatible with the Node CLI, which reads these runs given the same key or passphrase (`STEPLIGHT_ENCRYPTION_KEY` / `STEPLIGHT_PASSPHRASE`). |
+| `otel` | Export OpenTelemetry spans on `end()` (needs `steplight-sdk[otel]`); on by default only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set. |
 | `meta` | Extra string metadata stored on the run. |
 
 Organisation policy (`STEPLIGHT_POLICY_FILE`, `steplight.config.json`, `STEPLIGHT_*` variables: capture-level cap, site deny/allow lists, required encryption…) works as in the Node SDK and can only tighten settings; if a policy cannot be honoured nothing is recorded and the agent keeps running (`run.recording` is `False`).
