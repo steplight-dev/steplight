@@ -13,6 +13,7 @@
     "test": "pnpm -r test",
     "lint": "eslint .",
     "spec": "node scripts/generate-spec.mjs",
+    "release:version": "node scripts/release-version.mjs",
     "format": "prettier --write .",
     "demo": "pnpm --filter @steplight/demo-agent demo",
     "view": "node packages/cli/dist/bin.js view"

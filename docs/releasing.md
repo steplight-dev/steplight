@@ -13,7 +13,12 @@
 ## Cutting a release
 
 1. Decide the version. Final: `0.1.0`. Pre-release: `0.1.0-rc.1`, `0.1.0-rc.2`, …
-2. Set it in **six** places (a test checks they agree): `version` in `packages/{core,sdk,cli,redteam,steplight}/package.json`, `VERSION` in `packages/core/src/index.ts`, and `.version(...)` in `packages/cli/src/index.ts`.
+2. Set it everywhere with one command (Node only, works in Git Bash, PowerShell and Linux):
+   ```bash
+   pnpm release:version 0.2.0-rc.1 --dry-run   # list what would change, write nothing
+   pnpm release:version 0.2.0-rc.1             # do it
+   ```
+   The version must be `X.Y.Z` or `X.Y.Z-rc.N`; anything else is refused before any file is touched. It updates `version` in the five published packages and in every other workspace package that shares their version (root, viewer, extension, the examples; the GitHub Action is versioned separately and is never touched), `VERSION` in `packages/core/src/index.ts`, `.version(...)` in `packages/cli/src/index.ts`, the Chrome manifest (numbers only, so `0.2.0-rc.1` becomes `0.2.0`), and the PEP 440 form (`0.2.0-rc.1` becomes `0.2.0rc1`) in `python/pyproject.toml` and `python/src/steplight/__init__.py`. Then it runs `uv lock` in `python/` and `python/scripts/check_version.py v<version>`, re-reads everything, prints every file it changed and exits non-zero if anything disagrees. It never commits, tags or publishes: review `git diff`, then continue with step 3.
 3. Verify locally: `pnpm lint && pnpm -r build && pnpm -r test`.
 4. Check what would be published. Pack each package and look at the file list; only `dist/`, `package.json`, `README.md` and `LICENSE` may appear (plus `viewer-dist/` for the CLI):
    ```bash
@@ -49,7 +54,7 @@ The same tag also publishes the Python package **`steplight-sdk`** ([python/](..
 
 One-time setup (the GitHub environments exist, restricted to `v*` tags; the PyPI side is manual because it needs your PyPI accounts): on pypi.org and on test.pypi.org, add a **pending publisher** for project `steplight-sdk`: owner `steplight-dev`, repository `steplight`, workflow `release.yml`, environment `pypi-release` (PyPI) or `testpypi-release` (TestPyPI). The first successful publish turns it into a normal publisher.
 
-To cut a release, additionally set `version` in `python/pyproject.toml` and `__version__` in `python/src/steplight/__init__.py` to the PEP 440 form of the tag, and run `uv lock` in `python/` if the lock changed. Check locally with `python python/scripts/check_version.py v0.2.0-rc.1` and `uv build --out-dir dist python && python python/scripts/verify_dist.py dist`. Failure handling is as for npm: a version PyPI accepted cannot be reused, so release the next one.
+`pnpm release:version` (step 2 above) already sets the PEP 440 version in `python/pyproject.toml` and `python/src/steplight/__init__.py` and refreshes `uv.lock`. Check locally with `python python/scripts/check_version.py v0.2.0-rc.1` and `uv build --out-dir dist python && python python/scripts/verify_dist.py dist`. Failure handling is as for npm: a version PyPI accepted cannot be reused, so release the next one.
 
 ## Rules of thumb
 
