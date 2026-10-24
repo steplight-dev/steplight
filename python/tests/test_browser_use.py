@@ -123,6 +123,7 @@ def make_agent(site: str, tmp: Path, task: str = "Book the cheapest flight") -> 
         browser_profile=BrowserProfile(
             headless=True,
             executable_path=chromium_path(),
+            args=["--no-sandbox"],  # CI runners (Ubuntu 24) forbid the user namespaces Chrome's sandbox needs
             user_data_dir=str(tmp / "profile"),
             keep_alive=False,
             enable_default_extensions=False,
@@ -273,6 +274,7 @@ async def test_live_model_smoke(runs_dir: Path, tmp_path: Path) -> None:
         browser_profile=BrowserProfile(
             headless=True,
             executable_path=chromium_path(),
+            args=["--no-sandbox"],  # CI runners (Ubuntu 24) forbid the user namespaces Chrome's sandbox needs
             user_data_dir=str(tmp_path / "p"),
             enable_default_extensions=False,
         )
